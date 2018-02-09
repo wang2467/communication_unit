@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iostream>
 #include <boost/asio.hpp>
+#include <tuple>
 
 using boost::asio::ip::tcp;
 
@@ -26,9 +27,9 @@ public:
 		socket_.write_some(boost::asio::buffer(message_, request_len));
 	}
 
-	char* receive(){
+	std::tuple<char*, size_t> receive(){
 		size_t response_len = socket_.read_some(boost::asio::buffer(message_));
-		return message_;
+		return std::make_tuple(message_, response_len);
 	}
 };
 
@@ -41,14 +42,17 @@ int main(int argc, char* argv[]){
 	}
 	try{
 		char message[1024];
+		size_t response_len;
+		char* res;
 		for (;;){
 			boost::asio::io_service io_service;
 			CommunicationUnitClient c(io_service, argv[1], argv[2]);
 			std::cout << "Enter Message: ";
 			std::cin.getline(message, sizeof(message)/sizeof(char));
 			c.send(message);
-			char* res = c.receive();
+			std::tie(res, response_len)= c.receive();
 			std::cout << res << std::endl;
+			std::cout << response_len << std::endl;
 		}
 
 	}catch (std::exception& e){

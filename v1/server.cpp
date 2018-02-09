@@ -41,7 +41,7 @@ private:
 	void handle_read(const boost::system::error_code& error, size_t bytes_transferred){
 		if (!error){
 			strcat(data_, " --CAM2");
-			size_t len = bytes_transferred+4;
+			size_t len = bytes_transferred+7;
 			socket_.async_write_some(boost::asio::buffer(data_, len), boost::bind(&Session::handle_write, this,
 				boost::asio::placeholders::error));
 		} else{
