@@ -1,4 +1,4 @@
-//CLIENT THAT READS FROM SOCKET A HEADER AND MESSAGE
+//CLIENT SENDS TO SERVER
 #include <iostream>
 #include <mutex>
 #include <queue>
