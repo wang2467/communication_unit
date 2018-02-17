@@ -52,8 +52,8 @@ public:
 
 int main(int argc, char ** argv){
 	try{
-		if (argc != 3){
-			std::cerr << "Usage: client <hostIP> <port> <message>" << std::endl;
+		if (argc != 2){
+			std::cerr << "Usage: client <hostIP> <port>" << std::endl;
 			return 1;
 		}
 		asio::io_service ios_;
@@ -75,6 +75,7 @@ int main(int argc, char ** argv){
 			 fseek(t,0,SEEK_SET);
 			 char temp_[input.length() + 1];
 			 fread(temp_, input.length(), 1, input.c_str);			*/			
+		*/	
 			char temp_[input.length() + 1];
 			std::strcpy(temp_, input.c_str());			
 			temp_[input.length()] = '\0';
