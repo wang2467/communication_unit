@@ -1,84 +1,95 @@
 //CLIENT THAT READS FROM SOCKET A HEADER AND MESSAGE
 #include <iostream>
+#include <mutex>
+#include <queue>
+#include <fstream>
+#include <ctime>
 #include "asio.hpp"
 
 
 
 using asio::ip::tcp;
+class ClientUnit {
+private:
+	tcp::resolver resolver_;
+	tcp::resolver::query query_;
+	tcp::resolver::iterator endpoints_;
+	tcp::socket socket_;
+	asio::io_service& io_service_;
+
+public:
+	ClientUnit(asio::io_service& io_service, char * host, char * port):
+	io_service_(io_service), socket_(io_service), resolver_(io_service), query_(host, port){
+		endpoints_ = resolver_.resolve(query_);
+		asio::connect(socket_, endpoints_);
+	}
+
+	void send(char * message_){
+		asio::error_code ec;
+		//build header
+		std::size_t body_length_ = std::strlen(message_);
+		char header_[7];
+		sprintf(header_, "%7d", static_cast<int>(body_length_));
+		//build body
+		char body_[(int)body_length_];
+		strcpy(body_, message_);
+		
+		//convert header+body into one string
+		char send_this_[7 + (int)body_length_ + 1];
+		strcpy(send_this_, header_);
+		strcat(send_this_, body_);
+		
+		//set delimeter
+		send_this_[7+(int)body_length_] = '\0';	
+		
+		//write to socket
+		asio::write(socket_, asio::buffer((std::string) send_this_),
+			asio::transfer_all(), ec);
+
+	}
+};
 
 
-int main(int argc, char * argv[]){
+int main(int argc, char ** argv){
 	try{
 		if (argc != 3){
-			std::cerr << "Usage: client <hostIP> <port>" << std::endl;
+			std::cerr << "Usage: client <hostIP> <port> <message>" << std::endl;
 			return 1;
 		}
-		
-		//establish - an io_service
-		asio::io_service io_service;
-		
-		//translate the server name into a tcp endpoint
-		tcp::resolver resolver(io_service);
-		tcp::resolver::query query(argv[1], argv[2]);
-		
-		//return the list of endpoints
-		tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-		
-		//create the socket
-		tcp::socket socket_(io_service);
-		
-		//connect to endpoint
-		asio::connect(socket_, endpoint_iterator);
-		
-		//create a buffer to hold the input
-		asio::error_code ec;
-		char header_[4];
-	
-		int body_length_;
-		int bytes_read_;
-		
-		//read - fixed size - header from socket - header tells us how long the message is going to be
-		bytes_read_ = socket_.read_some(asio::buffer(header_, 4), ec);
-		//check error codes from read
-		if (ec == asio::error::eof){
-			printf("ERROR: EOF REACHED\n");
-			return 1;
-		}
-		else if (ec) {
-			printf("ERROR THROWN\n");
-			throw asio::system_error(ec);
-		}
+		asio::io_service ios_;
+		ClientUnit client1(ios_, argv[1], argv[2]);
+		std::string input;
 
-		//check if we read correct length of the header
-		if(bytes_read_ != 4){
-			printf("Incorrect amount of bytes read from getting header\n");
-			return 1;
-		}
+		std::cout << "Each new line will be sent to the server." << std::endl << "When you are finished type 'done'" << std::endl;
 		
-		//read the message
-		body_length_ = atoi(header_);
-		char message_[body_length_];
-		bytes_read_ = socket_.read_some(asio::buffer(message_, body_length_));
-		//check read amount
-		if(bytes_read_ != body_length_){
-			printf("Incorrect amount of bytes read from getting body\n");
-			return 1;
+		while(getline(std::cin, input) && input != "done"){
+			
+		/*	 //junk code used to test algo on text files
+			 clock_t time;
+			 time = clock();
+			 int length;
+			 FILE * t = fopen("testfile", "r");
+			 fseek(t, 0, SEEK_SET);
+			 fseek(t, 0, SEEK_END);
+			 length = ftell(t);
+			 fseek(t,0,SEEK_SET);
+			 char temp_[input.length() + 1];
+			 fread(temp_, input.length(), 1, input.c_str);			*/			
+			char temp_[input.length() + 1];
+			std::strcpy(temp_, input.c_str());			
+			temp_[input.length()] = '\0';
+			std::cout << temp_ << std::endl;
+			client1.send(temp_);
 		}
-		if (ec == asio::error::eof){
-			printf("ERROR: EOF REACHED\n");
-			return 1;
-		}
-		else if (ec) {
-			printf("ERROR THROWN\n");
-			throw asio::system_error(ec);
-		}
-	std::cout << "Message Received: " << message_ << std::endl;
+		//	time = clock() - time;
+	
+			//std::cout << "post send, time in seconds took :" << ((float)time/CLOCKS_PER_SEC) << std::endl << "length of file: " << length << std::endl;
+	//	}
 	}
 	catch (std::exception &e) {
 		std::cerr << e.what() << std::endl;
 	}
 
-		
 	return (0);
 }
 	
