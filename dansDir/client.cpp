@@ -74,8 +74,7 @@ int main(int argc, char ** argv){
 			 length = ftell(t);
 			 fseek(t,0,SEEK_SET);
 			 char temp_[input.length() + 1];
-			 fread(temp_, input.length(), 1, input.c_str);			*/			
-		*/	
+			 fread(temp_, input.length(), 1, input.c_str);			*/				
 			char temp_[input.length() + 1];
 			std::strcpy(temp_, input.c_str());			
 			temp_[input.length()] = '\0';
