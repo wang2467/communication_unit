@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <boost/asio.hpp>
+#include <cstring>
 
 using boost::asio::ip::tcp;
 
@@ -63,6 +64,11 @@ int main (int argc, char* argv[]){
 			std::cout <<"Finished" <<std::endl;
 			std::cout <<"Sent " << count <<" bytes" << std::endl;
 			size_t len = socket.read_some(boost::asio::buffer(buff, 1024));
+			std::string rec(buff);
+			std::string ack(rec.substr(0, 3));
+			if (strcmp(ack.c_str(), "ack") != 0){
+				break;
+			}
 		}
 
 	} catch(std::exception& e){

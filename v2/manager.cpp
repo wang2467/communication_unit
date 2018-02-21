@@ -38,7 +38,7 @@ private:
 			header_stream.read(data_, 2);
 			std::string file_name;
 			file_name.assign(file_type);
-			f.open(file_name.insert(0, std::to_string(count++)), std::fstream::out);
+			f.open(file_name.insert(0, "worker"+std::to_string(pid)+std::to_string(count++)), std::fstream::out);
 			temp_count = 0;
 			f.seekg(0, std::ios::beg);
 			pos_start = f.tellg();
@@ -48,7 +48,7 @@ private:
 			}while(header_stream.gcount() > 0);
 			socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&Sesssion::handle_read, this,
 				boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
-		} else{
+		} else {
 			//delete this;
 		}
 	}
@@ -149,7 +149,7 @@ int main(int argc, char* argv[]){
 		}
 		using namespace std;
 		boost::asio::io_service io_service;
-		CommunicationUnit c(1, io_service, atoi(argv[1]));
+		CommunicationUnit c(3, io_service, atoi(argv[1]));
 		c.run();
 	} catch (std::exception& e){
 		std::cerr << "Exception" << e.what() << std::endl;
