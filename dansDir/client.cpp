@@ -52,7 +52,7 @@ public:
 
 int main(int argc, char ** argv){
 	try{
-		if (argc != 2){
+		if (argc != 3){
 			std::cerr << "Usage: client <hostIP> <port>" << std::endl;
 			return 1;
 		}

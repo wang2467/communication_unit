@@ -31,13 +31,6 @@ private:
 				break;
 			}
 		}
-		/*
-		clock_t t;
-		t = clock();
-		start_reading();
-		t = clock() - t;
-		std::cout << "seconds took to read and write to file: " << ((float)t/CLOCKS_PER_SEC) << std::endl;		
-	//	}*/
 		
 		std::cout << "Stopped Reading... Disconnecting from port "<< port_ << std::endl;
 		//close socket so we can search for new peer
@@ -66,20 +59,15 @@ private:
 		int body_length_ = atoi(header_);
 		char body_[body_length_ + 1] = {'0'};
 		bytes_read_ = socket_.read_some(asio::buffer(body_, body_length_));
-		//FILE * out = fopen("out.txt", "w");
-		//fwrite(body_, bytes_read_, 1, out);
-		std::cout << body_;
-		int temp_ = body_length_;
 
-		//read_some may not have read the full length designated by the header because of OS? limitations.. We need to make sure we read the entire body ------ That is what this while loop does
-		
-		while (bytes_read_ != temp_ && ec != asio::error::eof){
-			temp_ -= bytes_read_;
-			bytes_read_ = socket_.read_some(asio::buffer(body_,temp_));
-			std::cout << body_;
-			//fwrite(body_, bytes_read_, 1, out);
+		//read_some may not have read the full length 
+		//designated by the header because of OS? 
+		//limitations.. We need to make sure we 
+		//read the entire body ------ That is 
+		//what this while loop does
+		while (bytes_read_ != body_length_ && ec != asio::error::eof){
+			bytes_read_ += socket_.read_some(asio::buffer(body_,body_length_ - bytes_read_));
 		}
-		std::cout << std::endl;
 		//set delimeter
 		body_[body_length_] = '\0';
 		//wrong amount of bytes read
@@ -91,7 +79,7 @@ private:
 			std::cout << "ERROR: EOF REACHED" << std::endl;
 			return EXIT_FAILURE;
 		}
-//	std::cout << "Message Received: " << body_ << std::endl;
+	std::cout << "Message Received: " << body_ << std::endl;
 
 	return EXIT_SUCCESS;
 	}
@@ -103,7 +91,7 @@ private:
 	tcp::socket socket_;
 	char * totalString;
 };
-void buildThread(short port){
+void buildThreadForReading(short port){
 	asio::io_service ios_;
 	ServerUnit s(ios_, port);
 	ios_.run();
@@ -114,8 +102,8 @@ int main(int argc, char ** argv){
 			std::cout << "Usage: <port#>" << std::endl;
 			return 1;
 		}
-		std::thread f1 (buildThread, atoi(argv[1]));
-//		std::thread f2 (buildThread, 51);
+		std::thread f1 (buildThreadForReading, atoi(argv[1]));
+//		std::thread f2 (buildThreadForReading, <arbitrary port number>);
 		f1.join();
 //		f2.join();
 	}
