@@ -16,47 +16,85 @@ public:
 		return socket_;
 	}
 
-	Sesssion(boost::asio::io_service& io_service): socket_(io_service), strand_(io_service), f("cp.png", std::fstream::out){
+	Sesssion(boost::asio::io_service& io_service): socket_(io_service), strand_(io_service), file_type(".png"), count(0){
+		pid++;
 	}
 
 	void start(){
-		 socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&Sesssion::handle_read, this, 
-		 	boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+		boost::asio::async_read_until(socket_, header_buf, "\n\n", boost::bind(&Sesssion::handle_read_header, this,
+			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+		 std::cout << socket_.remote_endpoint().port() << std::endl;
+	}
+
+	~Sesssion(){
+		std::cout << "Disconnected" << std::endl;
 	}
 
 private:
-
-	// void handle_read(const boost::system::error_code& error, size_t bytes_transferred){
-	// 	if (! error){
-	// 		printf("%s\n", data_);
-	// 		socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&Sesssion::handle_read, this, 
-	// 			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
-	// 	} else{
-	// 		delete this;
-	// 	}
-	// }
+	void handle_read_header(const boost::system::error_code& error, size_t bytes_transferred){
+		if(! error){
+			std::istream header_stream(&header_buf);
+			header_stream >> file_size;
+			header_stream.read(data_, 2);
+			std::string file_name;
+			file_name.assign(file_type);
+			f.open(file_name.insert(0, std::to_string(count++)), std::fstream::out);
+			temp_count = 0;
+			f.seekg(0, std::ios::beg);
+			pos_start = f.tellg();
+			do{
+				header_stream.read(data_, 1024);
+				f.write(data_, header_stream.gcount());
+			}while(header_stream.gcount() > 0);
+			socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&Sesssion::handle_read, this,
+				boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+		} else{
+			//delete this;
+		}
+	}
 
 	void handle_read(const boost::system::error_code& error, size_t bytes_transferred){
-		if(error == boost::asio::error::eof){
+		if(bytes_transferred > 0){
+			printf("read %lu\n", bytes_transferred);
 			f.write(data_, bytes_transferred);
-			f.close();
-			socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&Sesssion::handle_read, this, 
-		 	boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
-		} else if(!error){
-			f.write(data_, bytes_transferred);
-			socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&Sesssion::handle_read, this, 
-		 	boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+			if ((f.tellg() - pos_start) >= (std::streampos)file_size){
+				f.close();
+				std::string ack = "ack";
+				memset(data_, 0, 1024);
+				strcpy(data_, ack.c_str());
+				socket_.async_write_some(boost::asio::buffer(data_, 3), boost::bind(&Sesssion::handle_write, this,
+					boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+			} else{
+					socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&Sesssion::handle_read, this,
+						boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+			}
+		}
+	}
+
+	void handle_write(const boost::system::error_code& error, size_t bytes_transferred){
+		if (! error){
+			boost::asio::async_read_until(socket_, header_buf, "\n\n", boost::bind(&Sesssion::handle_read_header, this,
+				boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 		} else{
 			delete this;
 		}
 	}
 
+
+	std::string file_type;
 	tcp::socket socket_;
 	char data_[1024];
 	boost::system::error_code error_;
 	size_t bytes_transferred = 0;
 	boost::asio::strand strand_;
 	std::fstream f;
+	static int pid;
+	int count;
+	size_t temp_count;
+	std::streampos pos_start;
+
+	boost::asio::streambuf header_buf;
+	size_t file_size;
 };
 
 class CommunicationUnit{
@@ -92,6 +130,7 @@ public:
 		} else{
 			delete this;
 		}
+		start_accept();
 	}
 
 private:
@@ -99,6 +138,8 @@ private:
 	tcp::acceptor acceptor_;
 	boost::asio::io_service& io_service_;
 };
+
+int Sesssion::pid = 0;
 
 int main(int argc, char* argv[]){
 	try{
