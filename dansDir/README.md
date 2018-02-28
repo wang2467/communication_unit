@@ -14,3 +14,11 @@ Compilation for manager:
 
 Compilation for worker:
 > g++ -std=c++11 -pthread -I 'path to asio "include" directory' worker.cpp -o work
+
+
+
+
+<img align="Left" width="400" height="500" src="diagrams/OneWorkerVisualization.jpg">
+
+<img align="Right" width="400" height="500" src="diagrams/HighLevelVisualization.jpg">
+
