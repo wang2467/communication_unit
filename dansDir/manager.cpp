@@ -118,13 +118,13 @@ static void testQueue(std::queue<char *> &outQueue){
 /****************************************************************************************************************************
 * This is the initial call to establish 
 * each communication unit at a high level
-* All you have to do is fill in the
-* parameter and start a thread with this function
-* for each worker you have, call this function
+* All you have to do is start a subthread with this
+* function and fill in the parameters ... 
+* for each worker you have, call this function once
 * Parameters are as followed:
-* 	--ios_ is a shared io_service object between all the thread
+* 	--ios_ is a shared io_service object between all the threads
 * I wouldn't worry too much about it since we are not using ASIOS asynchronous operations
-* 	--workerPort_ is the port that the workers server your client will connect to is initiated on
+* 	--workerPort_ is the port that the workers ServerUnit is using, this ClientUnit will attempt to connect to it
 *	--localPort_ is the port that this ServerUnit will use. The Worker's ClientUnit we are working
 * with will use this localPort_ to connect to
 *	--IP_ is a local ip address currently
