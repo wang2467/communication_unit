@@ -18,8 +18,7 @@ Compilation for worker:
 
 
 
-<img align="Center" width="460" height="300" src="diagrams/OneWorkerVisualization.jpg">
+<img align="Left" width="460" height="300" src="diagrams/OneWorkerVisualization.jpg">
 
-<img align="Center" width="100" height="100" src="diagrams/OneWorkerVisualization.jpg">
-<img align="Center" width="100" height="100" src="diagrams/HighLevelVisualization.jpg">
+<img align="Right" width="460" height="300" src="diagrams/HighLevelVisualization.jpg">
 
