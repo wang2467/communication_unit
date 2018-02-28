@@ -17,3 +17,4 @@ Compilation for worker:
 
 
 ![Data Flow from one manager thread to one worker](diagrams/OneWorkerVisualization.jpg)
+![High Level Visualization](diagrams/HighLevelVisualization.jpg)
