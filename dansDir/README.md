@@ -15,6 +15,6 @@ Compilation for manager:
 Compilation for worker:
 > g++ -std=c++11 -pthread -I 'path to asio "include" directory' worker.cpp -o work
 
-
+<img align="left" width="100" height="100" src="diagrams/OneWorkerVisualization.jpg">
 ![Data Flow from one manager thread to one worker](diagrams/OneWorkerVisualization.jpg)
 ![High Level Visualization](diagrams/HighLevelVisualization.jpg)
