@@ -16,6 +16,4 @@ Compilation for worker:
 > g++ -std=c++11 -pthread -I 'path to asio "include" directory' worker.cpp -o work
 
 
-
-Flow of data from a single manager thread to one worker
 ![Data Flow from one manager thread to one worker](diagrams/OneWorkerVisualization.jpg)
