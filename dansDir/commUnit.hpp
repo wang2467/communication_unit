@@ -9,12 +9,21 @@
 using asio::ip::tcp;
 std::mutex m;
 
+/*********************************************
+* Builds a header that describes the length of
+* the message we are sending to the server
+*********************************************/
 static void buildHeader(char *message_, char *header_){
-	//build header
 	std::size_t body_length_ = std::strlen(message_);
 	sprintf(header_, "%7d", static_cast<int>(body_length_));
 }
 
+/*************************************************
+* Build a message ready to be sent to the socket
+* which has a fixed sized header and a dynamically
+* sized body ~ max size header can represent it 
+* up to 9,999,999 bytes
+*************************************************/
 static void buildPacketToSend(char *message_ , char *send_this_, char *header_){
 	
 	//build body	
@@ -28,7 +37,11 @@ static void buildPacketToSend(char *message_ , char *send_this_, char *header_){
 	//set delimeter
 	send_this_[7+strlen(message_)] = '\0';
 }
-	
+
+/*************************************************
+* Sends the package with header+body to the socket
+* for the server to read and decrypt
+*************************************************/
 void send(std::queue<char *> &outQueue, tcp::socket& socket_, asio::error_code ec){
 	char * message_ = outQueue.front();
 	char header_[7];
@@ -40,32 +53,58 @@ void send(std::queue<char *> &outQueue, tcp::socket& socket_, asio::error_code e
 	asio::write(socket_, asio::buffer((std::string) send_this_),
 	asio::transfer_all(), ec);
 }
+
+/*********************************************
+* Reads a fixed sized header from the socket
+* so we can determine the size of he attached
+* message
+*********************************************/
 static void getHeader(char * header_, tcp::socket& socket_, asio::error_code& ec){
-	//read header of length 7 bytes into 'header_' from socket
+	//read header of length 7 bytes from socket
 	int bytes_read_ = socket_.read_some(asio::buffer(header_, 7), ec);
 	
 	//set delimeter on header_
 	header_[7] = '\0';
 	
-	//if wrong amount of bytes read display error msg
+	//check if we read wrong amount of bytes from socket
 	if(bytes_read_ != 7 && bytes_read_ != 0){
 		std::cout << "Incorrect number of bytes read when reading header" << std::endl;
 	}
 }
-	//build body from socket
+
+/******************************************
+* Reads the body (message) from the socket
+* whose size is representated by our header
+******************************************/
 static void getBody(char *header_, char *body_, tcp::socket& socket_){
+	
 	//get body length from the header
 	header_[7] = '\0';
+	
+	//convert header to an integer representing incoming message length
 	int body_length_ = atoi(header_);
+	
+	//read the message from socket
 	int bytes_read_ = asio::read(socket_, asio::buffer(body_, body_length_));
+	
+	//add delimeter
 	body_[body_length_] = '\0';
-
+	
+	//check if we read wrong about of bytes from the socket
 	if(bytes_read_ != body_length_){
 		std::cout << "ERROR: incorrect number of bytes read while reading body" << std::endl;
 	}
 }
-//begin a continuous loop of reading from the socket
-//while the client stays connected
+
+
+/******************************************
+* 'start_reading(--)' attemps to read from 
+* the socket, if the client hangs up the
+* connection, error_code reads end of file
+* and we return EXIT_FAILURE
+* this function is called in a continuous
+* loop until the client hangs up
+******************************************/
 static int start_reading(tcp::socket& socket_, asio::error_code ec, std::queue<char *> &inQueue){
 	char *header_ = (char *)malloc(sizeof(char)*(8));
 	getHeader(header_, socket_, ec);
@@ -89,13 +128,20 @@ static int start_reading(tcp::socket& socket_, asio::error_code ec, std::queue<c
 //	std::cout << "Message Recv:" << body_ << std::endl;
 //	fwrite(body_, strlen(body_), 1, out);
 //	fclose(out);
+	
+	//push recieved message to queue
 	m.lock();
 	std::cout << "Message Recieved: " << body_ << std::endl;
 	inQueue.push(body_);
 	m.unlock();
 	return EXIT_SUCCESS;
 }
-		
+
+/*********************************************************
+* The ClientUnit is a class which initiates a client side
+* connection. Every ClientUnit depends on a ServerUnit to
+* connect to. ClientUnit WRITES to the socket.
+*********************************************************/
 class ClientUnit{
 private: 
 	tcp::resolver resolver_;
@@ -116,6 +162,12 @@ public:
 	}
 	void write(std::queue<char *> &inQueue, std::queue<char *> &outQueue);	
 };
+
+/****************************************************
+* ServerUnit is a class which initiates a server
+* side connection. A ServerUnit READS from the socket
+* and can be started without a ClientUnit.
+****************************************************/
 class ServerUnit{
 public:
 	//constructor
@@ -136,8 +188,7 @@ private:
 	
 		std::cout << "reading..." << std::endl;
 		for(;;){
-
-			//connection closed by worker
+			//connection closed by connected client
 			if(start_reading(socket_, ec, inQueue) == EXIT_FAILURE){
 				break;
 			}
