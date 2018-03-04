@@ -1,0 +1,1 @@
+g++ -std=c++11 -I ~/asio-1.10.8/include -pthread -g -o test_worker $1 $2
