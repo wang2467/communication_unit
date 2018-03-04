@@ -13,17 +13,20 @@ int main(int argc, char* argv[])
 {
   try
   {
-    if (argc != 4)
+/*    if (argc != 4)
     {
       cerr << "Usage: test_manager <local port> <host port> <host IP>\n";
       return EXIT_FAILURE;
-    }
+    }*/
 
     vector<ConnectionInfo*> v;
     ConnectionInfo* info = (ConnectionInfo*) malloc(sizeof(ConnectionInfo));
-    info->localPort_ = argv[1];
-    info->hostPort_ = argv[2];
-    info->hostIP_ = argv[3];
+    char localPort[5] = {'1', '1', '1', '1', '\0'};
+    char hostPort[5] = {'2', '2', '2', '2', '\0'};
+    char hostIP[10] = {'1', '2', '7', '.', '0', '.', '0', '.', '1', '\0'};
+    info->localPort_ = localPort;
+    info->hostPort_ = hostPort;
+    info->hostIP_ = hostIP;
     v.push_back(info);
     StartTransport* cu;
     thread t(&StartTransport::start, cu);
