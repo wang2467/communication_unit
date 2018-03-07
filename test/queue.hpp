@@ -16,7 +16,6 @@ public:
 	Queue(){}
 
 	void push(const T&node){
-	std::cout << strlen(node) << std::endl;
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
 			queue_.push(node);

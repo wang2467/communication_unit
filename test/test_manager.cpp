@@ -28,10 +28,9 @@ int main(int argc, char* argv[])
     info->hostPort_ = hostPort;
     info->hostIP_ = hostIP;
     v.push_back(info);
-    StartTransport* cu;
+    StartTransport* cu = new StartTransport(v);
     thread t(&StartTransport::start, cu);
     char line[9];
-    char* buf;
     for(int i = 0; i < 30; i++)
     {
       sprintf(line, "9%03d.png", i);
@@ -45,9 +44,12 @@ int main(int argc, char* argv[])
       fseek(fp, 0, SEEK_END);
       unsigned int filesize = ftell(fp);
       fseek(fp, 0, SEEK_SET);
-      fread(buf, sizeof(char), filesize, fp);
+      MessageInfo * msg = (MessageInfo *) malloc(sizeof(*msg));
+      msg->size_ = filesize;
+      msg->msg_ = (char*) malloc(sizeof(*(msg->msg_)) * msg->size_);
+      fread(msg->msg_, sizeof(char), msg->size_, fp);
       fclose(fp);
-      cu->outQueue.push(buf);
+      cu->outQueue.push(msg);
     }
     t.join();
     free(info);
