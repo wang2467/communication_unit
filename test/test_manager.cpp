@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     StartTransport* cu = new StartTransport(v);
     thread t(&StartTransport::start, cu);
     char line[9];
-    for(int i = 0; i < 30; i++)
+    for(int i = 0; i < 1000; i++)
     {
       sprintf(line, "9%03d.png", i);
       FILE* fp = fopen(line, "r");
