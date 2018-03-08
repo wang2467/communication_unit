@@ -1,14 +1,14 @@
 #include <fstream>
 #include <iostream>
-#include <queue>
 #include <thread>
+#include <time.h>
 #include "asio.hpp"
 #include "queue.hpp"
 #include "CommUnit.hpp"
 
 //start transport funcs
 
-StartTransport::StartTransport(std::vector<ConnectionInfo*> v)/*:ios_()*/{
+StartTransport::StartTransport(std::vector<ConnectionInfo*> v){
 	this -> v = v;
 }
 
@@ -62,46 +62,53 @@ ClientUnit::ClientUnit(asio::io_service& io_service, char *host, char *port, Que
 		asio::connect(socket_, endpoints_, ec);
 	}
 	std::cout << "ClientUnit successfully connected to a ServerUnit" << std::endl;
-	for(;;){
-		send();
+	std::ofstream myfile("sendspeed.txt");
+	for(int i = 1;;i++){
+		clock_t sendstart = clock();
+		long filesize = send();
+		clock_t sendend = clock();
+		float sendtot = sendend - sendstart;
+		if(myfile.is_open())
+		{
+			myfile << "File " << i << " sending speed:\t" << sendtot/CLOCKS_PER_SEC/filesize << "\n";
+		}
 	}
-		
+	myfile.close();
+	socket_.close();
 }
 
-void ClientUnit::send(){
+long ClientUnit::send(){
 	MessageInfo *msgInfo_ = (MessageInfo*) outQueue.pop();
 	char *msg_ = msgInfo_ -> msg_;
 	//build header
 	char header_[header_length];
-	buildHeader(msg_, header_, msgInfo_);
+	buildHeader(header_, msgInfo_);
 
 	//build full packet ~ header + message
-	char send_this_[header_length + msgInfo_ -> size_ + 1];
+	char send_this_[header_length + msgInfo_ -> size_];
 	buildPacketToSend(msg_, send_this_, header_, msgInfo_);
 
 	//send to socket
 	std::cout << "Sending Message Size: " << sizeof(send_this_) << std::endl;
 	asio::write(socket_, asio::buffer(send_this_, header_length + msgInfo_ -> size_), ec);
 	
+	long filesize = msgInfo_ -> size_;
+
 	free(msgInfo_ -> msg_);
 	free(msgInfo_);
+	return filesize;
 }
 	
 //build packet to send to socket
 void ClientUnit::buildPacketToSend(char *msg_, char *send_this_, char *header_, MessageInfo* msgInfo_){
-	
-	//build body	
-	//char body_[strlen(message_)]; (redundant)
-	//strcpy(body_, message_); (redundant)
-	
+
 	//concatenate body with header
 	std::memcpy(send_this_, header_, header_length);
 	std::memcpy(send_this_ + header_length, msg_, msgInfo_ -> size_);
-	send_this_[header_length + msgInfo_ -> size_] = '\0';
 }
 
 //build header for sending
-void ClientUnit::buildHeader(char *message_, char *header_, MessageInfo * msgInfo_){
+void ClientUnit::buildHeader(char *header_, MessageInfo * msgInfo_){
 	std::memcpy(header_, &msgInfo_ -> size_, sizeof(msgInfo_ -> size_));
 }
 	
@@ -119,51 +126,61 @@ inQueue(inQueue), outQueue(outQueue), port_(port_),ec(){
 void ServerUnit::accept(){
 	std::cout << "Making connection on port " << port_ << std::endl;
 	acceptor_.accept(socket_);
+	std::cout << "ServerUnit successfully connected to a ClientUnit" << std::endl;
+	std::ofstream myfile("readspeed.txt");
 	for(int i = 0;;i++){
+		clock_t readstart = clock();
+		long filesize = read(i);
+		clock_t readend = clock();
 		//connection closed by connected client
-		if(read(i) == EXIT_FAILURE){
+		if(filesize == 0){
 			break;
 		}
-		
+		float readtot = readend - readstart;
+		if(myfile.is_open())
+		{
+			myfile << "File " << i + 1 << " reading speed:\t" << readtot/CLOCKS_PER_SEC/filesize << "\n";
+		}
 	}
+	myfile.close();
 	std::cout << "Connection Closed... disconnecting from port "<< port_ << std::endl;
 	//close socket so we can search for new peer
 	socket_.close();
 }
 	
 //continuously read from socket_
-int ServerUnit::read(int i){
+long ServerUnit::read(int i){
 	MessageInfo* msgInfo_ = (MessageInfo *)malloc(sizeof(MessageInfo));
 	if(msgInfo_ == NULL){
 		std::cout << "Malloc failed in ServerUnit::read ~ msgInfo_" << std::endl;
-		return EXIT_FAILURE;
+		return 0;
 	}
 	char *header_ = (char *)malloc(sizeof(char)*header_length);
 	if(header_ == NULL){
 		std::cout << "Malloc failed in ServerUnit::read ~ header_" << std::endl;
-		return EXIT_FAILURE;
+		return 0;
 	}
 	getHeader(header_);
 	//connection closed
 	if(ec == asio::error::eof){//connection closed by peer
 		std::cout << "ERROR: EOF REACHED: from header" << std::endl;
-		return EXIT_FAILURE;
+		return 0;
 	}
 	//insert message size
 	std::memcpy(&msgInfo_ -> size_, header_, header_length);
 
 	//get body of message aka main part
-	char *body_ = (char*)malloc(sizeof(char)*(msgInfo_ -> size_ + 1));
+	char *body_ = (char*)malloc(sizeof(char)*(msgInfo_ -> size_));
 	if(body_ == NULL){
 		std::cout << "Malloc failed in ServerUnit::read ~ body_" << std::endl;
-		return EXIT_FAILURE;
+		return 0;
 	}
 	getBody(msgInfo_, body_);
 
 	//connection closed
 	if(ec == asio::error::eof){
 		std::cout << "ERROR: EOF REACHED: for body" << std::endl;
-		return EXIT_FAILURE;
+		return 0;
 	}
 	
 	//push recieved message to queue
@@ -175,12 +192,12 @@ int ServerUnit::read(int i){
 	{
 		std::cout << "fopen failed\n";
 		std::cout << "filename = " << line << "\n";
-		return EXIT_FAILURE;
+		return 0;
 	}
 	myfile.write(body_, msgInfo_ -> size_);
 	myfile.close();
 	//inQueue.push(body_);
-	return EXIT_SUCCESS;
+	return msgInfo_ -> size_;
 }
 	
 //retrieve header of packet from socket
@@ -199,10 +216,9 @@ void ServerUnit::getBody(MessageInfo *msgInfo_, char *body_){
 	
 	//read the message from socket
 	long bytes_read_ = asio::read(socket_, asio::buffer(body_, msgInfo_ -> size_));
-	body_[msgInfo_ -> size_] = '\0';
 	//check if we read wrong about of bytes from the socket
 	if(bytes_read_ != msgInfo_ -> size_){
-		std::cout << "ERROR: incorrect number of bytes read while reading body" <<std::endl;
+		std::cout << "ERROR: incorrect number of bytes read while reading body" << std::endl;
 	}
 }
 

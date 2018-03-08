@@ -75,13 +75,13 @@ public:
 	ClientUnit(asio::io_service& io_service, char *host, char *port, Queue<MessageInfo *> &inQueue, Queue<MessageInfo *> &outQueue);
 	
 	//send a string to the socket
-	void send();
+	long send();
 	
 	//build packet to send to socket
-	void buildPacketToSend(char *message_, char *send_this_, char *header_, MessageInfo* msgInfo_);
+	void buildPacketToSend(char* msg_, char *send_this_, char *header_, MessageInfo* msgInfo_);
 
 	//build header for sending
-	void buildHeader(char *message_, char *header_, MessageInfo* msgInfo_);
+	void buildHeader(char *header_, MessageInfo* msgInfo_);
 	
 	//variables
 	tcp::resolver resolver_;
@@ -114,7 +114,7 @@ public:
 	void accept();
 	
 	//continuously read from socket_
-	int read(int i);
+	long read(int i);
 	
 	//retrieve header of packet from socket
 	void getHeader(char *header_);
