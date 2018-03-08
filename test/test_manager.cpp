@@ -30,10 +30,10 @@ int main(int argc, char* argv[])
     v.push_back(info);
     StartTransport* cu = new StartTransport(v);
     thread t(&StartTransport::start, cu);
-    char line[9];
+    char line[18];
     for(int i = 0; i < 1000; i++)
     {
-      sprintf(line, "9%03d.png", i);
+      sprintf(line, "./tosend/9%03d.png", i);
       FILE* fp = fopen(line, "r");
       if(fp == NULL)
       {

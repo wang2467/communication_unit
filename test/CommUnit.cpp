@@ -185,8 +185,8 @@ long ServerUnit::read(int i){
 	
 	//push recieved message to queue
 	std::cout << "Received Message Size: " << sizeof(header_) + msgInfo_ -> size_ << std::endl;
-	char line[9];
-	sprintf(line, "9%03d.png", i);
+	char line[20];
+	sprintf(line, "./received/9%03d.png", i);
 	std::ofstream myfile (line, std::ofstream::binary);
 	if(!myfile.is_open())
 	{
