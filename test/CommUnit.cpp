@@ -70,7 +70,7 @@ ClientUnit::ClientUnit(asio::io_service& io_service, char *host, char *port, Que
 		float sendtot = sendend - sendstart;
 		if(myfile.is_open())
 		{
-			myfile << "File " << i << " sending speed:\t" << sendtot/CLOCKS_PER_SEC/filesize << "\n";
+			myfile << "File " << i << " sending speed:\t" << filesize/(sendtot/CLOCKS_PER_SEC)/1000000 << "Mbps\n";
 		}
 	}
 	myfile.close();
@@ -139,7 +139,7 @@ void ServerUnit::accept(){
 		float readtot = readend - readstart;
 		if(myfile.is_open())
 		{
-			myfile << "File " << i + 1 << " reading speed:\t" << readtot/CLOCKS_PER_SEC/filesize << "\n";
+			myfile << "File " << i + 1 << " reading speed:\t" << filesize/(readtot/CLOCKS_PER_SEC)/1000000 << "Mbps\n";
 		}
 	}
 	myfile.close();
